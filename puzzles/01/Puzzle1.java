@@ -1,3 +1,4 @@
+import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -79,17 +80,37 @@ public class Puzzle1 {
             return 1;
         }
 
-        ArrayList<String> moves = new ArrayList<String>(16);
+        ArrayList<Point> moves = new ArrayList<Point>(16);
         String move;
         MyLocation location = new MyLocation(0, 0, Heading.NORTH);
+        Point firstCross = null;
         while (moveData.hasNext()) {
             move = moveData.next();
+            Point oldPoint = new Point(location.x, location.y);
             System.out.println("Move is " + move);
-            moves.add(move);
             location.move(move);
+            Point newPoint = new Point(location.x, location.y);
+            if (firstCross == null) {
+                System.err.println("null check " + oldPoint + newPoint);
+                for (int i = oldPoint.x; i < newPoint.x; i++) {
+                    for (int j = oldPoint.y; j < newPoint.y; j++) {
+                        Point currPoint = new Point(i, j);
+                        System.err.println(currPoint + "yy" + moves);
+                        if (moves.contains(currPoint)) {
+                            firstCross = currPoint;
+                            System.err.println(firstCross + "xx" + currPoint);
+                        } else {
+                            moves.add(currPoint);
+                        }
+                    }
+                }
+            }
+            moves.add(newPoint);
         }
+        System.out.println(moves);
         System.out.println("Ending coords: " + location.x + ", " + location.y);
         System.out.println("Distance: " + (Math.abs(location.x) + Math.abs(location.y)));
+        System.out.println(firstCross);
         
 
         return 0;
