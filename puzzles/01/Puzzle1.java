@@ -63,7 +63,7 @@ public class Puzzle1 {
             this.y += distance * heading.ySign;
         }
 
-        private Heading heading;
+        public Heading heading;
         public int x;
         public int y;
     }
@@ -91,26 +91,37 @@ public class Puzzle1 {
             location.move(move);
             Point newPoint = new Point(location.x, location.y);
             if (firstCross == null) {
-                System.err.println("null check " + oldPoint + newPoint);
-                for (int i = oldPoint.x; i < newPoint.x; i++) {
-                    for (int j = oldPoint.y; j < newPoint.y; j++) {
-                        Point currPoint = new Point(i, j);
-                        System.err.println(currPoint + "yy" + moves);
+                // System.err.println(oldPoint + "yy" + newPoint);
+                if (oldPoint.x == newPoint.x) {
+                    for (int j = oldPoint.y; Math.abs(j) < Math.abs(newPoint.y); j += location.heading.ySign) {
+                        Point currPoint = new Point(oldPoint.x, j);
                         if (moves.contains(currPoint)) {
                             firstCross = currPoint;
-                            System.err.println(firstCross + "xx" + currPoint);
+                            // System.err.println("found! " + currPoint);
                         } else {
                             moves.add(currPoint);
+                            // System.err.println("checked " + currPoint);
+                        }
+                    }
+                } else {
+                    for (int i = oldPoint.x; Math.abs(i) < Math.abs(newPoint.x); i += location.heading.xSign) {
+                        Point currPoint = new Point(i, oldPoint.y);
+                        if (moves.contains(currPoint)) {
+                            firstCross = currPoint;
+                            // System.err.println("found! " + currPoint);
+                        } else {
+                            moves.add(currPoint);
+                           //  System.err.println("checked " + currPoint);
                         }
                     }
                 }
             }
-            moves.add(newPoint);
         }
-        System.out.println(moves);
+        // System.out.println(moves);
         System.out.println("Ending coords: " + location.x + ", " + location.y);
         System.out.println("Distance: " + (Math.abs(location.x) + Math.abs(location.y)));
-        System.out.println(firstCross);
+        System.out.println("First revisit: " + firstCross);
+        System.out.println(firstCross.x + firstCross.y);
         
 
         return 0;
