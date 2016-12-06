@@ -28,6 +28,7 @@ public class Puzzle4 {
         Map<Character, Integer> charCounts = new HashMap<Character, Integer>();
         boolean validChecksum = true;
 
+        // parts includes final sector+checksum section
         for (int i = 0; i < parts.length-1; i++) {
             // System.out.println(parts[i]);
             for (char c: parts[i].toCharArray()) {
@@ -62,9 +63,24 @@ public class Puzzle4 {
                 validChecksum = false;
             }
         }
-        System.out.println(checksum + "  " + calced);
+        // System.out.println(checksum + "  " + calced);
 
         return validChecksum;
+    }
+
+    public static String decrypt(String[] parts, int sector) {
+        String output = new String();
+        // parts includes final sector+checksum section
+        for (int i = 0; i < parts.length-1; i++) {
+            for (char c: parts[i].toCharArray()) {
+                int ord = (int)c - 'a';
+                ord += (sector % 26);
+                ord = ord % 26;
+                output += (char) ('a' + ord);
+            }
+            output += " ";
+        }
+        return output;
     }
 
     public static int solve(String inputFile){
@@ -92,6 +108,10 @@ public class Puzzle4 {
 
             if (validateChecksum(parts, checksum)) {
                 sectorSum += sector;
+                String realName = decrypt(parts, sector);
+                if (realName.contains("north")) {
+                    System.out.println(realName + " -- " + sector);
+                }
             }
         }
 
