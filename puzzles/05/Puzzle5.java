@@ -46,8 +46,9 @@ public class Puzzle5 {
             Map<Character, Integer> charCounts = (Map<Character, Integer>)column;
             // System.out.println(charCounts);
             ArrayList<Map.Entry<Character, Integer>> entries = new ArrayList(charCounts.entrySet());
-            Collections.sort(entries, (Map.Entry<Character, Integer> o1, Map.Entry<Character, Integer> o2) -> o2.getValue().compareTo(o1.getValue()));
-            System.out.println(entries.get(0));
+            Collections.sort(entries, Collections.reverseOrder(Map.Entry.comparingByValue()));
+            int last = entries.size() - 1;
+            System.out.println(entries.get(0).getKey() + "  " + entries.get(last).getKey());
         }
         return 0;
     }
