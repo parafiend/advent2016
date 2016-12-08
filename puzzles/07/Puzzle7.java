@@ -3,7 +3,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.Set;
@@ -24,7 +24,11 @@ public class Puzzle7 {
         }
 
         int tlsEnabledCount = 0;
+        int sslSupportedCount = 0;
         while (ipData.hasNextLine()) {
+            HashSet<String> supernets = new HashSet<String>();
+            HashSet<String> hypernets = new HashSet<String>();
+
             String ip = ipData.nextLine();
             boolean inBrackets = (ip.charAt(0) == '[' && ip.charAt(1) != ']') || (ip.charAt(1) == '[');
             boolean tlsEnabled = false;
@@ -34,18 +38,42 @@ public class Puzzle7 {
 
             for (int i = 2; i < ip.length() && !tlsDisabled; i++) {
                 char c = ip.charAt(i);
+                boolean sslSupported = false;
                 if (c == ']') {
                     inBrackets = false;
                 } else if (c == '[') {
                     inBrackets = true;
-                } else if (c == lastChar && lastChar != twoAgo) {
-                    if (i + 1 < ip.length() && ip.charAt(i+1) == twoAgo) {
+                } else {
+                    if(c == lastChar && lastChar != twoAgo && i + 1 < ip.length() && ip.charAt(i+1) == twoAgo) {
                         // System.out.println("" + twoAgo + lastChar + c + ip.charAt(i+1) + "  " + inBrackets);
                         if (inBrackets) {
                             tlsDisabled = true;
-                            break;
+                            // break;
                         } else {
                             tlsEnabled = true;
+                        }
+                    }
+
+                    if (c == twoAgo && lastChar != ']' && lastChar != '[' && !sslSupported) {
+                        String sequence = "" + twoAgo + lastChar + c;
+                        String inverse = "" + lastChar + c + lastChar;
+
+                        // Hypernet sequence
+                        if (inBrackets) {
+                            if (supernets.contains(inverse)) {
+                                sslSupportedCount++;
+                                sslSupported = true;
+                            } else {
+                                hypernets.add(sequence);
+                            }
+                        // Supernet sequence
+                        } else {
+                            if (hypernets.contains(inverse)) {
+                                sslSupportedCount++;
+                                sslSupported = true;
+                            } else {
+                                supernets.add(sequence);
+                            }
                         }
                     }
                 }
@@ -61,6 +89,7 @@ public class Puzzle7 {
             // System.out.println(realEnabled + "  " + tlsEnabled + "  " + tlsDisabled + "  " + ip);
         }
         System.out.println("TLS Enabled on " + tlsEnabledCount + " addresses");
+        System.out.println("SSL Enabled on " + sslSupportedCount + " addresses");
 
         return 0;
     }
