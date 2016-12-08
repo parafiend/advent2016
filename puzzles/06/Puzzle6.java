@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.Scanner;
 
-public class Puzzle5 {
+public class Puzzle6 {
     public static int solve(String inputFile) {
         System.out.println("File is " + inputFile);
         Scanner transData = null;
