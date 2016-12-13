@@ -2,97 +2,76 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.TreeSet;
 
 public class Puzzle11 {
 
     private enum Element { POLONIUM, THULIUM, PROMETHIUM, RUTHENIUM, COBALT, HYDROGEN, LITHIUM, ELERIUM, DULITHIUM };
     private enum Type { GENERATOR, MICROCHIP };
 
-    private static class Moveable {
-        public int floor;
+    private enum Moveable {
+        
+        POGE(Element.POLONIUM,Type.GENERATOR),
+        POMI(Element.POLONIUM,Type.MICROCHIP),
+        THGE(Element.THULIUM,Type.GENERATOR),
+        THMI(Element.THULIUM,Type.MICROCHIP),
+        PRGE(Element.PROMETHIUM,Type.GENERATOR),
+        PRMI(Element.PROMETHIUM,Type.MICROCHIP),
+        RUGE(Element.RUTHENIUM,Type.GENERATOR),
+        RUMI(Element.RUTHENIUM,Type.MICROCHIP),
+        COGE(Element.COBALT,Type.GENERATOR),
+        COMI(Element.COBALT,Type.MICROCHIP),
+        HYGE(Element.HYDROGEN,Type.GENERATOR),
+        HYMI(Element.HYDROGEN,Type.MICROCHIP),
+        LIGE(Element.LITHIUM,Type.GENERATOR),
+        LIMI(Element.LITHIUM,Type.MICROCHIP),
+        ELGE(Element.ELERIUM,Type.GENERATOR),
+        ELMI(Element.ELERIUM,Type.MICROCHIP),
+        DUGE(Element.DULITHIUM,Type.GENERATOR),
+        DUMI(Element.DULITHIUM,Type.MICROCHIP);
+
         public Element element;
         public Type type;
 
-        public Moveable(Element element, Type type) {
+        private Moveable(Element element, Type type) {
             this.element = element;
             this.type = type;
         }
 
         public boolean equals(Moveable other) {
-            return (this.element == other.element && this.type == other.type && this.floor == other.floor);
+            return (this.element == other.element && this.type == other.type);
         }
 
-        public boolean notFried(HashSet<Moveable> floor) {
+        public boolean notFried(EnumSet<Moveable> floor) {
             return true;
         }
 
         public String toString() {
             return "<" + this.element + "," + this.type + ">";
         }
-
-        public int hashCode() {
-            return Objects.hash(this.floor, this.element, this.type);
-        }
     }
 
+    /**
     private static class Microchip extends Moveable {
         public Microchip (Element element) {
             super(element, Type.MICROCHIP);
         }
 
-        public boolean notFried(HashSet<Moveable> floor) {
-            boolean powered = false;
-            boolean badGen = false;
-            for (Moveable item: floor) {
-                if (item.type == Type.GENERATOR && item.element == this.element) {
-                    powered = true;
-                } else if (item.type == Type.GENERATOR && item.element != this.element) {
-                    badGen = true;
-                }
-            }
-            return !badGen || powered;
-        }
-    }
-
-    private static class ElevatorMove {
-        public int startFloor;
-        public int endFloor;
-        public HashSet<Moveable> contains;
-
-        public ElevatorMove(int start, int end) {
-            this.startFloor = start;
-            this.endFloor = end;
-            contains = new HashSet<Moveable>();
-        }
-
-        public ElevatorMove(int start, int end, HashSet<Moveable> items) {
-            this.startFloor = start;
-            this.endFloor = end;
-            contains = new HashSet<Moveable>();
-            for (Moveable item: items) {
-                contains.add(item);
-            }
-        }
-
-        public String toString() {
-            String result = "";
-            result += startFloor + "->" + endFloor + contains;
-            return result;
-        }
-    }
+    }**/
 
     private static class MoveState {
-        public ArrayList<ElevatorMove> elevator;
-        public ArrayList<HashSet<Moveable>> floors;
+        public ArrayList<EnumSet<Moveable>> floors;
         Boolean valid;
         Boolean success;
         int hash;
         int elevatorFloor;
         int moves;
         int floorHashes;
+        int score;
 
         MoveState(int numFloors) {
             valid = null;
@@ -100,11 +79,11 @@ public class Puzzle11 {
             hash = -1;
             elevatorFloor = 0;
             moves = 0;
-            floors = new ArrayList<HashSet<Moveable>>();
-            elevator = new ArrayList<ElevatorMove>();
+            score = 0;
+            floors = new ArrayList<EnumSet<Moveable>>();
 
             for (int i = 0; i < numFloors; i++) {
-                HashSet<Moveable> floor = new HashSet<Moveable>();
+                EnumSet<Moveable> floor = EnumSet.noneOf(Moveable.class);
                 floors.add(floor);
             }
         }
@@ -115,15 +94,16 @@ public class Puzzle11 {
             hash = -1;
             elevatorFloor = other.elevatorFloor;
             moves = other.moves;
-            elevator = new ArrayList<ElevatorMove>(other.elevator);
+            score = 0;
 
-            floors = new ArrayList<HashSet<Moveable>>();
+            floors = new ArrayList<EnumSet<Moveable>>();
             for (int i = 0; i < other.floors.size(); i++) {
-                HashSet<Moveable> floor = new HashSet<Moveable>();
+                EnumSet<Moveable> floor = EnumSet.noneOf(Moveable.class);
                 floors.add(floor);
-                HashSet<Moveable> otherFloor = other.floors.get(i);
+                EnumSet<Moveable> otherFloor = other.floors.get(i);
                 for (Moveable item: otherFloor) {
                     floor.add(item);
+                    score += (other.floors.size()-1);
                 }
             }
         }
@@ -154,15 +134,25 @@ public class Puzzle11 {
             success = true;
             int maxFloor = floors.size() - 1;
             for (int i = 0; i < floors.size(); i++) {
-                HashSet<Moveable> floor = floors.get(i);
+                EnumSet<Moveable> floor = floors.get(i);
                 //System.out.println("--------" + i + "  " + floor.size() + "  " + maxFloor);
                 for (Moveable item: floor) {
                     if (i != maxFloor) {
                         success = false;
                     }
                     if (item.type == Type.MICROCHIP) {
-                        Microchip chip = (Microchip)item;
-                        boolean notFried = chip.notFried(floor);
+                            boolean powered = false;
+                            boolean badGen = false;
+                            for (Moveable iteml: floor) {
+                                if (iteml.type == Type.GENERATOR && iteml.element == item.element) {
+                                    powered = true;
+                                } else if (iteml.type == Type.GENERATOR && iteml.element != item.element) {
+                                    badGen = true;
+                                }
+                            }
+                        boolean notFried = !badGen || powered;
+                        //Microchip chip = (Microchip)item;
+                        //boolean notFried = chip.notFried(floor);
                         //System.out.println(notFried + "  " + item + "  " + floor);
                         valid = valid && notFried;
                         
@@ -172,20 +162,21 @@ public class Puzzle11 {
             return valid;
         }
 
-        public boolean move(HashSet<Moveable> items, int floor, int dir) {
+        public boolean move(EnumSet<Moveable> items, int floor, int dir) {
             if (floor + dir >= floors.size() || floor + dir < 0) {
                 return false;
             }
 
             boolean success = true;
-            HashSet<Moveable> sourceFloor = floors.get(floor);
-            HashSet<Moveable> destFloor = floors.get(floor + dir);
+            EnumSet<Moveable> sourceFloor = floors.get(floor);
+            EnumSet<Moveable> destFloor = floors.get(floor + dir);
             for (Moveable item: items) {
                 if (!sourceFloor.remove(item)) {
                     success = false;
                     break;
                 }
                 destFloor.add(item);
+                score += dir;
             }
             if (success) {
                 //ElevatorMove move = new ElevatorMove(floor, floor + dir, items);
@@ -198,7 +189,7 @@ public class Puzzle11 {
 
         public String toString() {
             String result = "";
-            for (HashSet<Moveable> floor: floors) {
+            for (EnumSet<Moveable> floor: floors) {
                 for (Moveable item: floor) {
                     result = result + item + ",";
                 }
@@ -213,23 +204,23 @@ public class Puzzle11 {
         int shortest;
         int longest;
         HashSet<MoveState> seen;
-        ArrayList<MoveState> toCheck;
+        TreeSet<MoveState> toCheck;
 
         public Solver() {
             shortest = 100;
             longest = 0;
             seen = new HashSet<MoveState>();
-            toCheck = new ArrayList<MoveState>();
+            toCheck = new TreeSet<MoveState>((MoveState o1, MoveState o2) -> o1.score - o2.score);
         }
         
         public int solve(MoveState inputState) {
             toCheck.add(inputState);
             int count = 0;
             while (toCheck.size() > 0) {
-                evalute(toCheck.remove(0));
+                evalute(toCheck.pollFirst());
                 count++;
 
-                if (count % 10000 == 0) {
+                if (count % 1 == 0) {
                     System.out.println(count + "  " + longest + "  " + seen.size() + "  " + toCheck.size());
                 }
             }
@@ -238,6 +229,7 @@ public class Puzzle11 {
                 //System.out.println(move);
                 //System.out.println(move.hashCode());
             }
+            System.out.println(toCheck);
 
             return shortest;
         }
@@ -255,23 +247,29 @@ public class Puzzle11 {
                 } else if (inputState.valid) {
                     longest = Math.max(longest, inputState.moves);
                     int currentFloor = inputState.elevatorFloor();
-                    HashSet<Moveable> floor = inputState.floors.get(currentFloor);
-                    HashSet<HashSet<Moveable>> nextMoves = new HashSet<HashSet<Moveable>>();
+                    EnumSet<Moveable> floor = inputState.floors.get(currentFloor);
+                    HashSet<EnumSet<Moveable>> nextMoves = new HashSet<EnumSet<Moveable>>();
                     for (Moveable left: floor) {
                         for (Moveable right: floor) {
-                            nextMoves.add(new HashSet<Moveable>(Arrays.asList(left, right)));
+                            nextMoves.add(EnumSet.of(left, right));
                         }
-                        nextMoves.add(new HashSet<Moveable>(Arrays.asList(left)));
+                        nextMoves.add(EnumSet.of(left));
                     }
 
-                    for (HashSet<Moveable> items: nextMoves) {
+                    for (EnumSet<Moveable> items: nextMoves) {
                         MoveState upState = new MoveState(inputState);
                         upState.move(items, currentFloor, 1);
-                        toCheck.add(upState);
+                        //if (!seen.contains(upState)) {
+                            toCheck.add(upState);
+                            System.out.println(upState);
+                        //}
 
                         MoveState downState = new MoveState(inputState);
                         downState.move(items, currentFloor, -1);
-                        toCheck.add(downState);
+                        //if (!seen.contains(downState)) {
+                            toCheck.add(downState);
+                            System.out.println(downState);
+                        //}
                     }
                 }
             }
@@ -291,34 +289,34 @@ public class Puzzle11 {
 
         if (args[0].equals("part1") || args[0].equals("part2")) {
             MoveState input = new MoveState(4);
-            input.floors.get(0).add(new Microchip(Element.THULIUM));
-            input.floors.get(0).add(new Microchip(Element.RUTHENIUM));
-            input.floors.get(0).add(new Microchip(Element.COBALT));
-            input.floors.get(0).add(new Moveable(Element.POLONIUM, Type.GENERATOR));
-            input.floors.get(0).add(new Moveable(Element.THULIUM, Type.GENERATOR));
-            input.floors.get(0).add(new Moveable(Element.PROMETHIUM, Type.GENERATOR));
-            input.floors.get(0).add(new Moveable(Element.RUTHENIUM, Type.GENERATOR));
-            input.floors.get(0).add(new Moveable(Element.COBALT, Type.GENERATOR));
+            input.floors.get(0).add(Moveable.THMI);
+            input.floors.get(0).add(Moveable.RUMI);
+            input.floors.get(0).add(Moveable.COMI);
+            input.floors.get(0).add(Moveable.POGE);
+            input.floors.get(0).add(Moveable.THGE);
+            input.floors.get(0).add(Moveable.PRGE);
+            input.floors.get(0).add(Moveable.RUGE);
+            input.floors.get(0).add(Moveable.COGE);
 
             if (args[0].equals("part2")) {
-                input.floors.get(0).add(new Microchip(Element.ELERIUM));
-                input.floors.get(0).add(new Microchip(Element.DULITHIUM));
-                input.floors.get(0).add(new Moveable(Element.ELERIUM, Type.GENERATOR));
-                input.floors.get(0).add(new Moveable(Element.DULITHIUM, Type.GENERATOR));
+                input.floors.get(0).add(Moveable.ELMI);
+                input.floors.get(0).add(Moveable.DUMI);
+                input.floors.get(0).add(Moveable.ELGE);
+                input.floors.get(0).add(Moveable.DUGE);
             }
 
-            input.floors.get(1).add(new Microchip(Element.POLONIUM));
-            input.floors.get(1).add(new Microchip(Element.PROMETHIUM));
+            input.floors.get(1).add(Moveable.POMI);
+            input.floors.get(1).add(Moveable.PRMI);
             //input.elevator.add(new ElevatorMove(-1,0));
 
                 Solver solver = new Solver();
                 solver.solve(input);
         } else if (args[0].equals("test")) {
             MoveState input = new MoveState(4);
-            input.floors.get(0).add(new Microchip(Element.HYDROGEN));
-            input.floors.get(1).add(new Moveable(Element.HYDROGEN, Type.GENERATOR));
-            input.floors.get(0).add(new Microchip(Element.LITHIUM));
-            input.floors.get(2).add(new Moveable(Element.LITHIUM, Type.GENERATOR));
+            input.floors.get(0).add(Moveable.HYMI);
+            input.floors.get(1).add(Moveable.HYGE);
+            input.floors.get(0).add(Moveable.LIMI);
+            input.floors.get(2).add(Moveable.LIGE);
             //input.elevator.add(new ElevatorMove(-1,0));
 
             Solver solver = new Solver();
