@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class Puzzle11 {
 
-    private enum Element { POLONIUM, THULUNIUM, PROMETHIUM, RUTHENIUM, COBALT, HYDROGEN, LITHIUM };
+    private enum Element { POLONIUM, THULIUM, PROMETHIUM, RUTHENIUM, COBALT, HYDROGEN, LITHIUM };
     private enum Type { GENERATOR, MICROCHIP };
 
     private static class Moveable {
@@ -25,12 +25,17 @@ public class Puzzle11 {
             return (this.element == other.element && this.type == other.type && this.floor == other.floor);
         }
 
-        public static boolean notFried(ArrayList<Moveable> floor) {
+        public boolean notFried(HashSet<Moveable> floor) {
+            System.out.println("Baaaaaase");
             return true;
         }
 
         public String toString() {
             return "<" + this.element + "," + this.type + ">";
+        }
+
+        public int hashCode() {
+            return Objects.hash(this.floor, this.element, this.type);
         }
     }
 
@@ -39,9 +44,10 @@ public class Puzzle11 {
             super(element, Type.MICROCHIP);
         }
 
-        public boolean notFriend(ArrayList<Moveable> floor) {
+        public boolean notFried(HashSet<Moveable> floor) {
             boolean powered = false;
             boolean badGen = false;
+            System.out.println("check-----------------------------");
             for (Moveable item: floor) {
                 if (item.type == Type.GENERATOR && item.element == this.element) {
                     powered = true;
@@ -56,40 +62,44 @@ public class Puzzle11 {
     private static class ElevatorMove {
         public int startFloor;
         public int endFloor;
-        public ArrayList<Moveable> contains;
+        public HashSet<Moveable> contains;
 
         public ElevatorMove(int start, int end) {
             this.startFloor = start;
             this.endFloor = end;
-            contains = new ArrayList<Moveable>();
+            contains = new HashSet<Moveable>();
         }
 
-        public ElevatorMove(int start, int end, ArrayList<Moveable> items) {
+        public ElevatorMove(int start, int end, HashSet<Moveable> items) {
             this.startFloor = start;
             this.endFloor = end;
-            contains = new ArrayList<Moveable>();
+            contains = new HashSet<Moveable>();
             for (Moveable item: items) {
                 contains.add(item);
             }
         }
 
-
+        public String toString() {
+            String result = "";
+            result += startFloor + "->" + endFloor + contains;
+            return result;
+        }
     }
 
     private static class MoveState {
         public ArrayList<ElevatorMove> elevator;
-        public ArrayList<ArrayList<Moveable>> floors;
+        public ArrayList<HashSet<Moveable>> floors;
         Boolean valid;
         Boolean success;
 
         MoveState(int numFloors) {
             valid = null;
             success = null;
-            floors = new ArrayList<ArrayList<Moveable>>();
+            floors = new ArrayList<HashSet<Moveable>>();
             elevator = new ArrayList<ElevatorMove>();
 
             for (int i = 0; i < numFloors; i++) {
-                ArrayList<Moveable> floor = new ArrayList<Moveable>();
+                HashSet<Moveable> floor = new HashSet<Moveable>();
                 floors.add(floor);
             }
         }
@@ -99,13 +109,13 @@ public class Puzzle11 {
             success = null;
             elevator = new ArrayList<ElevatorMove>(other.elevator);
 
-            floors = new ArrayList<ArrayList<Moveable>>();
+            floors = new ArrayList<HashSet<Moveable>>();
             for (int i = 0; i < other.floors.size(); i++) {
-                ArrayList<Moveable> floor = new ArrayList<Moveable>();
+                HashSet<Moveable> floor = new HashSet<Moveable>();
                 floors.add(floor);
-                ArrayList<Moveable> otherFloor = other.floors.get(i);
-                for (int j = 0; j < otherFloor.size(); j++) {
-                    floor.add(otherFloor.get(j));
+                HashSet<Moveable> otherFloor = other.floors.get(i);
+                for (Moveable item: otherFloor) {
+                    floor.add(item);
                 }
             }
         }
@@ -119,10 +129,14 @@ public class Puzzle11 {
         }
 
         public int hashCode() {
-            return Objects.hash(this.elevatorFloor(), floors);
+            int hash =  Objects.hash(this.elevatorFloor(), this.floors);
+            System.out.println("Hash " + hash);
+            return hash;
         }
 
-        public boolean equals(MoveState b) {
+        public boolean equals(Object ob) {
+            MoveState b = (MoveState)ob;
+            System.out.println("EqualsCheck");
             return (this.elevatorFloor() == b.elevatorFloor() && this.floors.equals(b.floors));
         }
 
@@ -131,30 +145,34 @@ public class Puzzle11 {
             success = true;
             int maxFloor = floors.size() - 1;
             for (int i = 0; i < floors.size(); i++) {
-                ArrayList<Moveable> floor = floors.get(i);
+                HashSet<Moveable> floor = floors.get(i);
+                System.out.println("--------" + i + "  " + floor.size() + "  " + maxFloor);
                 for (Moveable item: floor) {
                     if (i != maxFloor) {
                         success = false;
+                        System.out.println("--xx");
                     }
                     if (item.type == Type.MICROCHIP) {
-                        boolean notFried = item.notFried(floor);
-                        // System.out.println(notFried + "  " + item + "  " + floor);
+                        Microchip chip = (Microchip)item;
+                        boolean notFried = chip.notFried(floor);
+                        System.out.println(notFried + "  " + item + "  " + floor);
                         valid = valid && notFried;
                         
                     }
                 }
+                System.out.println(success);
             }
             return valid;
         }
 
-        public boolean move(ArrayList<Moveable> items, int floor, int dir) {
+        public boolean move(HashSet<Moveable> items, int floor, int dir) {
             if (floor + dir >= floors.size() || floor + dir < 0) {
                 return false;
             }
 
             boolean success = true;
-            ArrayList<Moveable> sourceFloor = floors.get(floor);
-            ArrayList<Moveable> destFloor = floors.get(floor + dir);
+            HashSet<Moveable> sourceFloor = floors.get(floor);
+            HashSet<Moveable> destFloor = floors.get(floor + dir);
             for (Moveable item: items) {
                 if (!sourceFloor.remove(item)) {
                     success = false;
@@ -168,6 +186,18 @@ public class Puzzle11 {
             }
             return success;
         }
+
+        public String toString() {
+            String result = "";
+            for (HashSet<Moveable> floor: floors) {
+                for (Moveable item: floor) {
+                    result = result + item + ",";
+                }
+                result = result + "\n";
+            }
+            result += "-------------\n";
+            return result;
+        }
     }
 
     private static class Solver {
@@ -177,7 +207,7 @@ public class Puzzle11 {
         ArrayList<MoveState> toCheck;
 
         public Solver() {
-            shortest = -1;
+            shortest = 100;
             longest = 0;
             seen = new HashSet<MoveState>();
             toCheck = new ArrayList<MoveState>();
@@ -186,14 +216,20 @@ public class Puzzle11 {
         public int solve(MoveState inputState) {
             toCheck.add(inputState);
             int count = 0;
-            while (shortest < 0 && count < 1000000) {
+            while (count < 10000 && toCheck.size() > 0) {
                 evalute(toCheck.remove(0));
                 count++;
 
-                if (count % 10000 == 0) {
+                if (count % 1 == 0) {
                     System.out.println(count + "  " + longest + "  " + seen.size() + "  " + toCheck.size());
                 }
             }
+
+            for (MoveState move: seen) {
+                //System.out.println(move);
+                //System.out.println(move.hashCode());
+            }
+
             return shortest;
         }
 
@@ -201,30 +237,28 @@ public class Puzzle11 {
             if (seen.contains(inputState)) {
             } else {
                 inputState.validate();
+                System.out.println("-- " + inputState.success);
                 seen.add(inputState);
+                System.out.println("-b " + inputState.success);
                 if (inputState.success) {
+                    System.out.println("XXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXX\nXXXXXXXXX");
                     shortest = Math.min(inputState.elevator.size(), shortest);
                     System.out.println(inputState.elevator);
                     System.out.println(shortest);
+                    toCheck.clear();
                 } else if (inputState.valid) {
                     longest = Math.max(longest, inputState.elevator.size());
                     int currentFloor = inputState.elevatorFloor();
-                    ArrayList<Moveable> floor = inputState.floors.get(currentFloor);
-                    for (Moveable item: floor) {
-                        for (int i = floor.indexOf(item)+1; i < floor.size(); i++) {
-                            ArrayList<Moveable> items = new ArrayList<Moveable>();
-                            items.add(item);
-                            items.add(floor.get(i));
-                            MoveState upState = new MoveState(inputState);
-                            upState.move(items, currentFloor, 1);
-                            toCheck.add(upState);
-
-                            MoveState downState = new MoveState(inputState);
-                            downState.move(items, currentFloor, -1);
-                            toCheck.add(downState);
+                    HashSet<Moveable> floor = inputState.floors.get(currentFloor);
+                    HashSet<HashSet<Moveable>> nextMoves = new HashSet<HashSet<Moveable>>();
+                    for (Moveable left: floor) {
+                        for (Moveable right: floor) {
+                            nextMoves.add(new HashSet<Moveable>(Arrays.asList(left, right)));
                         }
-                        ArrayList<Moveable> items = new ArrayList<Moveable>();
-                        items.add(item);
+                        nextMoves.add(new HashSet<Moveable>(Arrays.asList(left)));
+                    }
+
+                    for (HashSet<Moveable> items: nextMoves) {
                         MoveState upState = new MoveState(inputState);
                         upState.move(items, currentFloor, 1);
                         toCheck.add(upState);
@@ -249,7 +283,23 @@ public class Puzzle11 {
             System.exit(1);
         }
 
-        if (args[0].equals("test")) {
+        if (args[0].equals("part1")) {
+            MoveState input = new MoveState(4);
+            input.floors.get(0).add(new Microchip(Element.THULIUM));
+            input.floors.get(0).add(new Microchip(Element.RUTHENIUM));
+            input.floors.get(0).add(new Microchip(Element.COBALT));
+            input.floors.get(0).add(new Moveable(Element.POLONIUM, Type.GENERATOR));
+            input.floors.get(0).add(new Moveable(Element.THULIUM, Type.GENERATOR));
+            input.floors.get(0).add(new Moveable(Element.PROMETHIUM, Type.GENERATOR));
+            input.floors.get(0).add(new Moveable(Element.RUTHENIUM, Type.GENERATOR));
+            input.floors.get(0).add(new Moveable(Element.COBALT, Type.GENERATOR));
+            input.floors.get(1).add(new Microchip(Element.POLONIUM));
+            input.floors.get(1).add(new Microchip(Element.PROMETHIUM));
+            input.elevator.add(new ElevatorMove(-1,0));
+
+            Solver solver = new Solver();
+            solver.solve(input);
+        } else if (args[0].equals("test")) {
             MoveState input = new MoveState(4);
             input.floors.get(0).add(new Microchip(Element.HYDROGEN));
             input.floors.get(1).add(new Moveable(Element.HYDROGEN, Type.GENERATOR));
@@ -259,7 +309,7 @@ public class Puzzle11 {
 
             Solver solver = new Solver();
             solver.solve(input);
-        } 
+        }
 
         System.exit(0);
     }
