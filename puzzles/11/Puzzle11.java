@@ -1,17 +1,22 @@
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.TreeSet;
+import java.util.PriorityQueue;
 
 public class Puzzle11 {
 
     private enum Element { POLONIUM, THULIUM, PROMETHIUM, RUTHENIUM, COBALT, HYDROGEN, LITHIUM, ELERIUM, DULITHIUM };
     private enum Type { GENERATOR, MICROCHIP };
+
+    private static final int MOVE_WEIGHT = 10;
+    private static final int DISTANCE_WEIGHT = 15;
+    private static final int PAIR_WEIGHT = 5;
 
     private enum Moveable {
         
@@ -55,6 +60,9 @@ public class Puzzle11 {
         }
     }
 
+    private static final EnumSet<Moveable> GENERATORS = EnumSet.of(Moveable.POGE, Moveable.THGE, Moveable.PRGE, Moveable.RUGE, Moveable.COGE, Moveable.HYGE, Moveable.LIGE, Moveable.LIMI, Moveable.ELGE, Moveable.DUGE);
+    private static final EnumSet<Moveable> MICROCHIPS = EnumSet.of(Moveable.POMI, Moveable.THMI, Moveable.PRMI, Moveable.RUMI, Moveable.COMI, Moveable.HYMI, Moveable.LIMI, Moveable.LIMI, Moveable.ELMI, Moveable.DUMI);
+
     /**
     private static class Microchip extends Moveable {
         public Microchip (Element element) {
@@ -64,7 +72,7 @@ public class Puzzle11 {
     }**/
 
     private static class MoveState {
-        public ArrayList<EnumSet<Moveable>> floors;
+        public LinkedList<EnumSet<Moveable>> floors;
         Boolean valid;
         Boolean success;
         int hash;
@@ -80,7 +88,7 @@ public class Puzzle11 {
             elevatorFloor = 0;
             moves = 0;
             score = 0;
-            floors = new ArrayList<EnumSet<Moveable>>();
+            floors = new LinkedList<EnumSet<Moveable>>();
 
             for (int i = 0; i < numFloors; i++) {
                 EnumSet<Moveable> floor = EnumSet.noneOf(Moveable.class);
@@ -94,16 +102,16 @@ public class Puzzle11 {
             hash = -1;
             elevatorFloor = other.elevatorFloor;
             moves = other.moves;
-            score = 0;
+            score = 10*moves;
 
-            floors = new ArrayList<EnumSet<Moveable>>();
+            floors = new LinkedList<EnumSet<Moveable>>();
             for (int i = 0; i < other.floors.size(); i++) {
                 EnumSet<Moveable> floor = EnumSet.noneOf(Moveable.class);
                 floors.add(floor);
                 EnumSet<Moveable> otherFloor = other.floors.get(i);
                 for (Moveable item: otherFloor) {
                     floor.add(item);
-                    score += (other.floors.size()-1);
+                    score += DISTANCE_WEIGHT * (other.floors.size()-1-i);
                 }
             }
         }
@@ -124,6 +132,16 @@ public class Puzzle11 {
             return hash;
         }
 
+        public void rescore() {
+            score = moves;
+            for (int i = 0; i < floors.size(); i++) {
+                EnumSet<Moveable> floor = floors.get(i);
+                int maxFloor = floors.size() - 1;
+                score += floor.size() * (maxFloor - i);
+            }
+                
+        }
+
         public boolean equals(Object ob) {
             MoveState b = (MoveState)ob;
             return (this.elevatorFloor == b.elevatorFloor && this.floors.equals(b.floors));
@@ -136,16 +154,29 @@ public class Puzzle11 {
             for (int i = 0; i < floors.size(); i++) {
                 EnumSet<Moveable> floor = floors.get(i);
                 //System.out.println("--------" + i + "  " + floor.size() + "  " + maxFloor);
+                /**
+                EnumSet<Moveable> generators = EnumSet.copyOf(floor);
+                generators.retainAll(GENERATORS);
+                EnumSet<Moveable> microchips = EnumSet.copyOf(floor);
+                microchips.retainAll(MICROCHIPS);
+                valid = generators.isEmpty() || generators.containsAll(microchips);
+                if (i != maxFloor && floor.size() != 0) {
+                    success = false;
+                }
+                **/
+                
                 for (Moveable item: floor) {
                     if (i != maxFloor) {
                         success = false;
                     }
+                    
                     if (item.type == Type.MICROCHIP) {
                             boolean powered = false;
                             boolean badGen = false;
                             for (Moveable iteml: floor) {
                                 if (iteml.type == Type.GENERATOR && iteml.element == item.element) {
                                     powered = true;
+                                    break;
                                 } else if (iteml.type == Type.GENERATOR && iteml.element != item.element) {
                                     badGen = true;
                                 }
@@ -157,7 +188,9 @@ public class Puzzle11 {
                         valid = valid && notFried;
                         
                     }
+                    
                 }
+                
             }
             return valid;
         }
@@ -176,7 +209,7 @@ public class Puzzle11 {
                     break;
                 }
                 destFloor.add(item);
-                score += dir;
+                score += (-dir * DISTANCE_WEIGHT) + MOVE_WEIGHT;
             }
             if (success) {
                 //ElevatorMove move = new ElevatorMove(floor, floor + dir, items);
@@ -204,24 +237,29 @@ public class Puzzle11 {
         int shortest;
         int longest;
         HashSet<MoveState> seen;
-        TreeSet<MoveState> toCheck;
+        //LinkedList<MoveState> toCheck;
+        PriorityQueue<MoveState> toCheck;
 
         public Solver() {
             shortest = 100;
             longest = 0;
             seen = new HashSet<MoveState>();
-            toCheck = new TreeSet<MoveState>((MoveState o1, MoveState o2) -> o1.score - o2.score);
+            toCheck = new PriorityQueue<MoveState>(10000, (MoveState o1, MoveState o2) -> o1.score - o2.score);
+            //toCheck = new LinkedList<MoveState>();
         }
         
         public int solve(MoveState inputState) {
             toCheck.add(inputState);
             int count = 0;
             while (toCheck.size() > 0) {
-                evalute(toCheck.pollFirst());
+                MoveState test = toCheck.poll();
+                evalute(test);
+                //evalute(toCheck.remove(0));
                 count++;
 
-                if (count % 1 == 0) {
-                    System.out.println(count + "  " + longest + "  " + seen.size() + "  " + toCheck.size());
+                if (count % 2000000 == 0) {
+                    System.out.println(count + "  " + test.score + "  " + test.moves + "  " + longest + "  " + seen.size() + "  " + toCheck.size());
+                    System.out.println(test);
                 }
             }
 
@@ -229,13 +267,14 @@ public class Puzzle11 {
                 //System.out.println(move);
                 //System.out.println(move.hashCode());
             }
-            System.out.println(toCheck);
+            //System.out.println(toCheck);
+                    System.out.println(count + "  " +  longest + "  " + seen.size() + "  " + toCheck.size());
 
             return shortest;
         }
 
         public int evalute(MoveState inputState) {
-            if (seen.contains(inputState)) {
+            if (false) {
             } else {
                 inputState.validate();
                 seen.add(inputState);
@@ -251,7 +290,9 @@ public class Puzzle11 {
                     HashSet<EnumSet<Moveable>> nextMoves = new HashSet<EnumSet<Moveable>>();
                     for (Moveable left: floor) {
                         for (Moveable right: floor) {
-                            nextMoves.add(EnumSet.of(left, right));
+                            if(left.type == right.type || left.element == right.element) {
+                                nextMoves.add(EnumSet.of(left, right));
+                            }
                         }
                         nextMoves.add(EnumSet.of(left));
                     }
@@ -259,17 +300,19 @@ public class Puzzle11 {
                     for (EnumSet<Moveable> items: nextMoves) {
                         MoveState upState = new MoveState(inputState);
                         upState.move(items, currentFloor, 1);
-                        //if (!seen.contains(upState)) {
+                        if (upState.validate() && !seen.contains(upState)) {
+                            seen.add(upState);
                             toCheck.add(upState);
-                            System.out.println(upState);
-                        //}
+                            //System.out.println(upState);
+                        }
 
                         MoveState downState = new MoveState(inputState);
                         downState.move(items, currentFloor, -1);
-                        //if (!seen.contains(downState)) {
+                        if (downState.validate() && !seen.contains(downState)) {
                             toCheck.add(downState);
-                            System.out.println(downState);
-                        //}
+                            seen.add(downState);
+                            //System.out.println(downState);
+                        }
                     }
                 }
             }
