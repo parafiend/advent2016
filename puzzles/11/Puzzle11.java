@@ -26,7 +26,6 @@ public class Puzzle11 {
         }
 
         public boolean notFried(HashSet<Moveable> floor) {
-            System.out.println("Baaaaaase");
             return true;
         }
 
@@ -47,7 +46,6 @@ public class Puzzle11 {
         public boolean notFried(HashSet<Moveable> floor) {
             boolean powered = false;
             boolean badGen = false;
-            System.out.println("check-----------------------------");
             for (Moveable item: floor) {
                 if (item.type == Type.GENERATOR && item.element == this.element) {
                     powered = true;
@@ -130,13 +128,11 @@ public class Puzzle11 {
 
         public int hashCode() {
             int hash =  Objects.hash(this.elevatorFloor(), this.floors);
-            System.out.println("Hash " + hash);
             return hash;
         }
 
         public boolean equals(Object ob) {
             MoveState b = (MoveState)ob;
-            System.out.println("EqualsCheck");
             return (this.elevatorFloor() == b.elevatorFloor() && this.floors.equals(b.floors));
         }
 
@@ -146,21 +142,19 @@ public class Puzzle11 {
             int maxFloor = floors.size() - 1;
             for (int i = 0; i < floors.size(); i++) {
                 HashSet<Moveable> floor = floors.get(i);
-                System.out.println("--------" + i + "  " + floor.size() + "  " + maxFloor);
+                //System.out.println("--------" + i + "  " + floor.size() + "  " + maxFloor);
                 for (Moveable item: floor) {
                     if (i != maxFloor) {
                         success = false;
-                        System.out.println("--xx");
                     }
                     if (item.type == Type.MICROCHIP) {
                         Microchip chip = (Microchip)item;
                         boolean notFried = chip.notFried(floor);
-                        System.out.println(notFried + "  " + item + "  " + floor);
+                        //System.out.println(notFried + "  " + item + "  " + floor);
                         valid = valid && notFried;
                         
                     }
                 }
-                System.out.println(success);
             }
             return valid;
         }
@@ -216,11 +210,11 @@ public class Puzzle11 {
         public int solve(MoveState inputState) {
             toCheck.add(inputState);
             int count = 0;
-            while (count < 10000 && toCheck.size() > 0) {
+            while (toCheck.size() > 0) {
                 evalute(toCheck.remove(0));
                 count++;
 
-                if (count % 1 == 0) {
+                if (count % 10000 == 0) {
                     System.out.println(count + "  " + longest + "  " + seen.size() + "  " + toCheck.size());
                 }
             }
@@ -237,11 +231,8 @@ public class Puzzle11 {
             if (seen.contains(inputState)) {
             } else {
                 inputState.validate();
-                System.out.println("-- " + inputState.success);
                 seen.add(inputState);
-                System.out.println("-b " + inputState.success);
                 if (inputState.success) {
-                    System.out.println("XXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXX\nXXXXXXXXX");
                     shortest = Math.min(inputState.elevator.size(), shortest);
                     System.out.println(inputState.elevator);
                     System.out.println(shortest);
