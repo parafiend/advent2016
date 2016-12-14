@@ -16,7 +16,7 @@ public class Puzzle11 {
 
     private static final int MOVE_WEIGHT = 10;
     private static final int DISTANCE_WEIGHT = 15;
-    private static final int PAIR_WEIGHT = 5;
+    private static final int MAX_DISTANCE = 100;
 
     private enum Moveable {
         
@@ -111,7 +111,8 @@ public class Puzzle11 {
                 EnumSet<Moveable> otherFloor = other.floors.get(i);
                 for (Moveable item: otherFloor) {
                     floor.add(item);
-                    score += DISTANCE_WEIGHT * (other.floors.size()-1-i);
+                    int delta = other.floors.size() - 1 - 1;
+                    score += DISTANCE_WEIGHT * delta;
                 }
             }
         }
@@ -241,7 +242,7 @@ public class Puzzle11 {
         PriorityQueue<MoveState> toCheck;
 
         public Solver() {
-            shortest = 100;
+            shortest = MAX_DISTANCE;
             longest = 0;
             seen = new HashSet<MoveState>();
             toCheck = new PriorityQueue<MoveState>(10000, (MoveState o1, MoveState o2) -> o1.score - o2.score);
@@ -285,6 +286,9 @@ public class Puzzle11 {
                     toCheck.clear();
                 } else if (inputState.valid) {
                     longest = Math.max(longest, inputState.moves);
+                    if (inputState.moves+1 > MAX_DISTANCE) {
+                        return -1;
+                    }
                     int currentFloor = inputState.elevatorFloor();
                     EnumSet<Moveable> floor = inputState.floors.get(currentFloor);
                     HashSet<EnumSet<Moveable>> nextMoves = new HashSet<EnumSet<Moveable>>();
@@ -300,7 +304,7 @@ public class Puzzle11 {
                     for (EnumSet<Moveable> items: nextMoves) {
                         MoveState upState = new MoveState(inputState);
                         upState.move(items, currentFloor, 1);
-                        if (upState.validate() && !seen.contains(upState)) {
+                        if (upState.validate() && upState.score < MAX_DISTANCE*10 && !seen.contains(upState)) {
                             seen.add(upState);
                             toCheck.add(upState);
                             //System.out.println(upState);
@@ -308,7 +312,7 @@ public class Puzzle11 {
 
                         MoveState downState = new MoveState(inputState);
                         downState.move(items, currentFloor, -1);
-                        if (downState.validate() && !seen.contains(downState)) {
+                        if (downState.validate() && downState.score < MAX_DISTANCE*10 && !seen.contains(downState)) {
                             toCheck.add(downState);
                             seen.add(downState);
                             //System.out.println(downState);
