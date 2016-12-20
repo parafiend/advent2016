@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Scanner;
 import java.util.PriorityQueue;
 
-public class Puzzle12 {
+public class Puzzle13 {
 
     public static boolean isWall(Point pos, int fave) {
         long val = pos.x*pos.x + 3*pos.x + 2*pos.x*pos.y + pos.y + pos.y*pos.y + fave;
