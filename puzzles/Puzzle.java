@@ -35,7 +35,7 @@ public class Puzzle {
             case "part2": 
                 result = Stage.PART2;
                 break;
-            case default:
+            default:
                 result = Stage.TEST;
                 break;
             }
