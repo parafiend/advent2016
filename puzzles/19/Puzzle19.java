@@ -28,6 +28,7 @@ public class Puzzle19 {
     }
 
     public static void solve(int numElves, boolean newAlgo) {
+        //This should be a LinkedList for part1
         ArrayList<Integer> elves = new ArrayList<Integer>();
         LinkedList<Integer> nextElves = new LinkedList<Integer>();
         HashSet<Integer> stillPlaying = new HashSet<Integer>();
